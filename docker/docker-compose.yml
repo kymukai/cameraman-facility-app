@@ -1,0 +1,71 @@
+# cameraman-facility-app - ローカル Web ツール用 Docker Compose
+#
+# 使い方（docker/ ディレクトリで実行）:
+#   docker compose up -d --build
+#   → フロント: http://localhost:8080 / API: http://localhost:8080/api (nginx 経由)
+#
+# フロントは nginx が静的配信し、/api/* を backend コンテナへプロキシする。
+# バックエンドの直接アクセスは http://localhost:3000/api。
+
+# プロジェクト名を明示する（既定はフォルダ名 "docker" になり、他プロジェクトの
+# docker/ フォルダと衝突して互いのコンテナを壊すため必須）。
+name: cameraman-facility-app
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    image: cameraman-facility-app-backend:local
+    ports:
+      - "3000:3000"
+    environment:
+      - CORS_ORIGIN=http://localhost:8080
+      - DATABASE_URL=postgres://app:app@db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=app
+      - POSTGRES_DB=app
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    image: cameraman-facility-app-frontend:local
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  db-data:

@@ -1,0 +1,22 @@
+# ============================================================
+# frontend (React + Vite) ローカル実行用イメージ
+# ------------------------------------------------------------
+# ビルドコンテキスト = frontend/（docker-compose.yml が指定）
+# ビルド時に VITE_* を焼き込み、nginx で静的配信する。
+# /api はバックエンドコンテナへプロキシ（docker/nginx.conf）。
+# ============================================================
+FROM node:22-slim AS build
+WORKDIR /app
+
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+# nginx.conf は compose がマウントする（docker/nginx.conf）
+EXPOSE 80

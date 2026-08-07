@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-lambda/
+*.log
+.env
+function.zip
+.DS_Store

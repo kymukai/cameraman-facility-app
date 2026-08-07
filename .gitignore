@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-lambda/
+function.zip
+.env
+.env.local
+docker/.env
+*.log
+.DS_Store
