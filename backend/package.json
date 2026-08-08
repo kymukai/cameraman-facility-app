@@ -7,7 +7,8 @@
     "build": "nest build",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "build:zip": "node scripts/build-zip.mjs"
+    "build:zip": "node scripts/build-zip.mjs",
+    "migrate:excel": "node scripts/migrate-excel.mjs"
   },
   "dependencies": {
     "@codegenie/serverless-express": "^4.16.0",
@@ -27,6 +28,7 @@
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.0",
     "esbuild": "^0.24.0",
+    "exceljs": "^4.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.0"
   }
