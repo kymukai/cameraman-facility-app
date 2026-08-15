@@ -1,0 +1,76 @@
+# cameraman-facility-app - オンプレミス公開用 Docker Compose
+#
+# ローカル開発用 docker-compose.yml との違い:
+#   - frontend が 443(HTTPS) / 80(HTTPSへのリダイレクト) のみを公開する
+#   - backend(3000) / db(5432) はホストへ公開せず、app-net 内部からのみアクセス可能
+#   - DB認証情報・CORS許可オリジンは .env.prod で指定する（ローカルの app/app 固定値は使わない）
+#
+# 事前準備（docker/ ディレクトリで実行）:
+#   1. ./certs/generate-cert.sh <公開先IPアドレス>  … 自己署名証明書を生成
+#   2. cp .env.prod.example .env.prod              … 値を編集して埋める
+#
+# 起動:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+#
+# name はローカル開発用 docker-compose.yml と別にすること。同じにすると
+# db-data ボリュームを共有してしまい、開発環境の初期パスワードのまま
+# 初期化された状態と衝突する（POSTGRES_PASSWORD は初回初期化時のみ有効）。
+name: cameraman-facility-app-prod
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    image: cameraman-facility-app-backend:local
+    environment:
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    image: cameraman-facility-app-frontend:local
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  db-data:

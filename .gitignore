@@ -5,5 +5,8 @@ function.zip
 .env
 .env.local
 docker/.env
+docker/.env.prod
+docker/certs/*.crt
+docker/certs/*.key
 *.log
 .DS_Store
