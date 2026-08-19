@@ -136,8 +136,22 @@ npm run migrate:excel -- .\facilities.xlsx
 このテンプレートは Docker Compose + npm のみで構成されており、Mac 専用の仕組みは
 使っていないため、Windows でも同様に開発できる。
 
-- **Docker Compose で動かす場合**: Docker Desktop（WSL2 バックエンド推奨）をインストールし、
-  「クイックスタート（Docker）」節のコマンドをそのまま実行する。
+- **Docker Compose で動かす場合**: Docker Desktop は無償版のライセンスが「従業員250人未満
+  かつ年間売上1000万ドル未満」の組織に限定されるため、大企業での商用利用には有償契約が
+  必要になる。これを避けるには、WSL2 内に Docker Desktop を使わず Docker Engine（CE）を
+  直接インストールする（Docker Engine 自体は Apache-2.0 の完全無償OSSでライセンス制約なし）。
+
+  ```bash
+  # WSL2 の Ubuntu 内で実行
+  curl -fsSL https://get.docker.com | sh
+  sudo usermod -aG docker $USER
+  ```
+
+  systemd を有効化（`/etc/wsl.conf` に `[boot]` → `systemd=true` を追記して `wsl --shutdown`）
+  しておけば `dockerd` はWSL起動時に自動起動する。VSCode の「WSL」拡張機能で WSL 側から
+  プロジェクトを開き、あとは「クイックスタート（Docker）」節のコマンドをそのまま実行する
+  （`docker-compose.yml` は Docker Desktop 独自機能を使っていないため変更不要）。
+
 - **Docker を使わない場合**: Node.js 22 + npm をインストールし、「ローカル開発」節の
   手順をそのまま実行する（PowerShell のコマンド例をそのまま使える）。
 
